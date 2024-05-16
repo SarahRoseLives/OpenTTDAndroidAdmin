@@ -11,7 +11,8 @@ MDScreen:
             StackLayout:
                 BoxLayout:
                     orientation: 'vertical'  # Changed orientation to vertical
-                    size_hint_y: 0.1
+                    size_hint_y: 0.2
+                    height: self.minimum_height
                     padding: dp(20)  # Add padding to the outer BoxLayout
                     Label:
                         id: label_main_header1
@@ -100,6 +101,17 @@ MDScreen:
                         text: app.server  # Load from app.server
 
                     MDLabel:
+                        text: "Server Alias Name"
+                        size_hint_x: None
+                        width: dp(150)
+
+
+                    MDTextField:
+                        id: server_alias
+                        hint_text: "Enter an Alias Name for Your Server"
+                        text: app.server_alias  # Load from app.server
+
+                    MDLabel:
                         text: "Admin Port Number"
                         size_hint_x: None
                         width: dp(150)
@@ -128,9 +140,56 @@ MDScreen:
                         id: enable_logging
                         active: app.logging_enabled  # Load from app.logging_enabled
 
-                MDRaisedButton:
-                    text: "Save"
-                    size_hint_y: None
-                    height: "48dp"
-                    on_release: app.save_settings(openttd_server.text, admin_port.text, admin_password.text, enable_logging.active)
+                    MDLabel:
+                        text: "[b]Logging Packets[/b]"
+                        size_hint_x: None
+                        markup: True
+                        width: dp(150)
 
+                    MDLabel:
+                        text: ""
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDLabel:
+                        text: "Chat Packets"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDCheckbox:
+                        id: enable_chat_logging
+                        active: app.logging_chat_enabled
+
+                    MDLabel:
+                        text: "Console Packets"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDCheckbox:
+                        id: enable_console_logging
+                        active: app.logging_console_enabled
+
+                    MDLabel:
+                        text: "Client Info Packets"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDCheckbox:
+                        id: enable_clientinfo_logging
+                        active: app.logging_clientinfo_enabled
+
+                    MDLabel:
+                        text: "Rcon Packets"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDCheckbox:
+                        id: enable_rcon_logging
+                        active: app.logging_rcon_enabled
+
+
+                    MDRaisedButton:
+                        text: "Save"
+                        size_hint_y: None
+                        height: "48dp"
+                        on_release: app.save_settings(openttd_server.text, server_alias.text, admin_port.text, admin_password.text, enable_logging.active, enable_chat_logging.active, enable_console_logging.active, enable_clientinfo_logging.active, enable_rcon_logging.active)

@@ -10,9 +10,14 @@ BOT_NAME = "ottdAndroidAdmin"
 class MainApp(MDApp):
     # Define logging_enabled, password, admin_port, and server as class attributes
     logging_enabled = False  # Set a default value
-    password = "Should Probably Pu"  # Set a default value
+    password = ""  # Set a default value
     admin_port = 3977  # Set a default value
-    server = "Your Server URL or IP Here"  # Set a default value
+    server = ""  # Set a default value
+    server_alias = ""
+    logging_chat_enabled = False
+    logging_console_enabled = False
+    logging_clientinfo_enabled = False
+    logging_rcon_enabled = False
 
     def build(self):
         # Setting theme to my favorite theme
@@ -27,45 +32,64 @@ class MainApp(MDApp):
     def assign_settings_to_ui(self):
         # Assign loaded settings to UI fields
         self.root.ids.openttd_server.text = self.server
+        self.root.ids.server_alias.text = self.server_alias
         self.root.ids.admin_port.text = str(self.admin_port)
         self.root.ids.admin_password.text = self.password
         self.root.ids.enable_logging.active = self.logging_enabled
+        self.root.ids.enable_chat_logging.active = self.logging_chat_enabled
+        self.root.ids.enable_console_logging.active = self.logging_console_enabled
+        self.root.ids.enable_clientinfo_logging.active = self.logging_clientinfo_enabled
+        self.root.ids.enable_rcon_logging.active = self.logging_rcon_enabled
 
     def load_settings(self):
         # Read configuration settings
         filename = 'OpenTTDAdmin.conf'
-        config = self.read_config(filename)
-        openTTDAdmin_config = config['OpenTTDAdmin']
-        # Load settings into variables
-        self.server = openTTDAdmin_config['server']
-        self.admin_port = int(openTTDAdmin_config['admin_port'])
-        self.password = openTTDAdmin_config['password']
-        # Convert logging_enabled to a boolean
-        self.logging_enabled = openTTDAdmin_config.getboolean('logging_enabled')
-        # Print loaded settings for debugging
-        print("Loaded settings - Server:", self.server, "Port:", self.admin_port, "Password:", self.password,
-              "Logging Enabled:", self.logging_enabled)
-
-    def read_config(self, filename):
         config = configparser.ConfigParser()
         config.read(filename)
-        return config
+        # Load settings into variables
+        self.server = config.get('OpenTTDAdmin', 'server')
+        self.server_alias = config.get('OpenTTDAdmin', 'server_alias',
+                                       fallback='')  # Load server_alias with a default value
+        self.admin_port = config.getint('OpenTTDAdmin', 'admin_port')
+        self.password = config.get('OpenTTDAdmin', 'password')
+        # Convert logging_enabled to a boolean
+        self.logging_enabled = config.getboolean('OpenTTDAdmin', 'logging_enabled')
+        self.logging_chat_enabled = config.getboolean('OpenTTDAdmin', 'logging_chat_enabled')
+        self.logging_console_enabled = config.getboolean('OpenTTDAdmin', 'logging_console_enabled')
+        self.logging_clientinfo_enabled = config.getboolean('OpenTTDAdmin', 'logging_clientinfo_enabled')
+        self.logging_rcon_enabled = config.getboolean('OpenTTDAdmin', 'logging_rcon_enabled')
+        # Print loaded settings for debugging
+        print("Loaded settings - Server:", self.server, "Alias:", self.server_alias, "Port:", self.admin_port,
+              "Password:", self.password, "Logging Enabled:", self.logging_enabled,
+              "Chat Logging Enabled:", self.logging_chat_enabled,
+              "Console Logging Enabled:", self.logging_console_enabled,
+              "Client Info Logging Enabled:", self.logging_clientinfo_enabled,
+              "Rcon Logging Enabled:", self.logging_rcon_enabled)
 
-    def save_settings(self, server, admin_port, password, logging_enabled):
+    def save_settings(self, server, server_alias, admin_port, password, logging_enabled, logging_chat_enabled,
+                      logging_console_enabled, logging_clientinfo_enabled, logging_rcon_enabled):
         # Update configuration settings
         filename = 'OpenTTDAdmin.conf'
-        config = self.read_config(filename)
-        openTTDAdmin_config = config['OpenTTDAdmin']
-        openTTDAdmin_config['server'] = server
-        openTTDAdmin_config['admin_port'] = admin_port
-        openTTDAdmin_config['password'] = password
-        openTTDAdmin_config['logging_enabled'] = str(logging_enabled)
+        config = configparser.ConfigParser()
+        config.read(filename)
+        config['OpenTTDAdmin']['server'] = server
+        config['OpenTTDAdmin']['server_alias'] = server_alias  # Save server_alias
+        config['OpenTTDAdmin']['admin_port'] = str(admin_port)
+        config['OpenTTDAdmin']['password'] = password
+        config['OpenTTDAdmin']['logging_enabled'] = str(logging_enabled)
+        config['OpenTTDAdmin']['logging_chat_enabled'] = str(logging_chat_enabled)
+        config['OpenTTDAdmin']['logging_console_enabled'] = str(logging_console_enabled)
+        config['OpenTTDAdmin']['logging_clientinfo_enabled'] = str(logging_clientinfo_enabled)
+        config['OpenTTDAdmin']['logging_rcon_enabled'] = str(logging_rcon_enabled)
         # Save changes to the configuration file
         with open(filename, 'w') as configfile:
             config.write(configfile)
         # Print saved settings for debugging
-        print("Settings saved - Server:", server, "Port:", admin_port, "Password:", password, "Logging Enabled:",
-              logging_enabled)
+        print("Settings saved - Server:", server, "Alias:", server_alias, "Port:", admin_port, "Password:", password,
+              "Logging Enabled:", logging_enabled, "Chat Logging Enabled:", logging_chat_enabled,
+              "Console Logging Enabled:", logging_console_enabled,
+              "Client Info Logging Enabled:", logging_clientinfo_enabled,
+              "Rcon Logging Enabled:", logging_rcon_enabled)
         # Reload settings
         self.load_settings()
         # Restart Admin Thread
@@ -79,14 +103,22 @@ class MainApp(MDApp):
         # Start the admin thread again
         threading.Thread(target=self.start_admin).start()
 
+        # Reload settings
+        self.load_settings()  # Reload settings after restarting admin thread
+
+        # Start the admin thread again
+        threading.Thread(target=self.start_admin).start()
+
     def start_admin(self):
         # Instantiate the Admin class and establish connection to the server
         with Admin(ip=self.server, port=self.admin_port, name=f"{BOT_NAME} Listener", password=self.password) as admin:
             # Subscribe to receive date updates and set the frequency for updates
-            admin.send_subscribe(AdminUpdateType.CONSOLE)
+            if self.logging_console_enabled:
+                admin.send_subscribe(AdminUpdateType.CONSOLE)
             admin.send_subscribe(AdminUpdateType.CHAT)
             admin.send_subscribe(AdminUpdateType.CMD_LOGGING)
-            admin.send_subscribe(AdminUpdateType.CLIENT_INFO)
+            if self.logging_clientinfo_enabled:
+                admin.send_subscribe(AdminUpdateType.CLIENT_INFO)
             admin.send_subscribe(AdminUpdateType.DATE, AdminUpdateFrequency.ANUALLY)
             # Keep the connection open and print incoming date packets
             while True:
@@ -152,12 +184,20 @@ class MainApp(MDApp):
                 main_header_label1 = self.root.ids.label_main_header1
                 main_header_label2 = self.root.ids.label_main_header2
                 main_header_label3 = self.root.ids.label_main_header3
-                main_header_label1.text = f"[color=#00FF00][size=25][b]{server_name} Version: {version}[/b][/size][/color]\r\n"
-                main_header_label2.text = f"[color=#00FF00][size=20][b]Map: {map_name} Landscape: {landscape} Start Date: {startdate}[/b][/size][/color]"
+                main_header_label1.text = f"[color=#000000][size=40][b]{self.server_alias} Version: {version}[/b][/size][/color]\r\n"
+                main_header_label2.text = f"[color=#000000][size=35][b]Map: {map_name} Landscape: {landscape} Start Date: {startdate}[/b][/size][/color]"
 
             else:
                 if self.logging_enabled is True:
-                    self.update_ui_with_log_message(str(packet))
+                    if isinstance(packet, openttdpacket.ConsolePacket):
+                        self.update_ui_with_log_message(packet.message)
+                    if isinstance(packet, openttdpacket.ClientInfoPacket):
+                        self.update_ui_with_log_message(str(packet))
+                    if isinstance(packet, openttdpacket.RconPacket):
+                        if self.logging_rcon_enabled:
+                            self.update_ui_with_log_message(packet.response)
+                    if isinstance(packet, openttdpacket.CmdLoggingPacket):
+                        self.update_ui_with_log_message(str(packet))
         else:
             # Ensure that the ScrollView stays at the bottom even when packet is empty
             log_message_list = self.root.ids.log_message_list
