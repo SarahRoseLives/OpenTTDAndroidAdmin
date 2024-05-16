@@ -116,11 +116,15 @@ class MainApp(MDApp):
     @mainthread
     def update_ui_on_main_thread(self, packet):
         # Update UI with packet data
-
-        print("Received message:", str(packet))  # Debugging statement
-        # Ensure UI updates are executed on the main thread
-        print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
-        self.update_ui_with_log_message(str(packet))
+        if packet:
+            print("Received message:", str(packet))  # Debugging statement
+            # Ensure UI updates are executed on the main thread
+            print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
+            self.update_ui_with_log_message(str(packet))
+        else:
+            # Ensure that the ScrollView stays at the bottom even when packet is empty
+            log_message_list = self.root.ids.log_message_list
+            log_message_list.parent.scroll_y = 0
 
     def update_ui_with_log_message(self, message):
         # Add a new item to the MDList
