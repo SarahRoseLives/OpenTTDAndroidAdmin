@@ -5,12 +5,14 @@ from kivymd.uix.list import OneLineListItem
 import threading
 import configparser
 
+
+BOT_NAME = "ottdAndroidAdmin"
 class MainApp(MDApp):
     # Define logging_enabled, password, admin_port, and server as class attributes
     logging_enabled = False  # Set a default value
-    password = ""  # Set a default value
-    admin_port = 0  # Set a default value
-    server = ""  # Set a default value
+    password = "Should Probably Pu"  # Set a default value
+    admin_port = 3977  # Set a default value
+    server = "Your Server URL or IP Here"  # Set a default value
 
     def build(self):
         # Setting theme to my favorite theme
@@ -78,17 +80,14 @@ class MainApp(MDApp):
         threading.Thread(target=self.start_admin).start()
 
     def start_admin(self):
-        # Set the IP address and port number for connection
-        #ip_address = "192.168.1.3"
-        #port_number = 3977
         # Instantiate the Admin class and establish connection to the server
-        with Admin(ip=self.server, port=self.admin_port, name="AndroidAdmin", password=self.password) as admin:
+        with Admin(ip=self.server, port=self.admin_port, name=f"{BOT_NAME} Listener", password=self.password) as admin:
             # Subscribe to receive date updates and set the frequency for updates
             admin.send_subscribe(AdminUpdateType.CONSOLE)
             admin.send_subscribe(AdminUpdateType.CHAT)
             admin.send_subscribe(AdminUpdateType.CMD_LOGGING)
             admin.send_subscribe(AdminUpdateType.CLIENT_INFO)
-            admin.send_subscribe(AdminUpdateType.DATE, AdminUpdateFrequency.DAILY)
+            admin.send_subscribe(AdminUpdateType.DATE, AdminUpdateFrequency.ANUALLY)
             # Keep the connection open and print incoming date packets
             while True:
                 # Receive packets from the server
@@ -97,12 +96,21 @@ class MainApp(MDApp):
                     # Update UI in the main thread
                     Clock.schedule_once(lambda dt, p=packet: self.update_ui(p))
 
+    def send_to_admin_port(self, message, send_type, client_id=None):
+        try:
+            with Admin(ip=self.server, port=self.admin_port, name=f"{BOT_NAME} Sender", password=self.password) as admin:
+                if send_type == 'global':
+                    admin.send_global(message)
+                if send_type == 'rcon':
+                    admin.send_rcon(message)
+                if send_type == 'private':
+                    if client_id is None:
+                        raise ValueError("client_id is required for private messages.")
+                    admin.send_private(message, client_id)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            # Handle the error appropriately
 
-    def process_welcome_packet(self):
-        pass
-
-
-    # Where stuff happens
     def update_ui(self, packet):
         """
         Update the UI with packet data.
@@ -111,14 +119,12 @@ class MainApp(MDApp):
             packet: The packet received from the server.
         """
         if packet:
-            if self.logging_enabled is True:
-                print("Received message:", packet)  # Debugging statement
-                # Ensure UI updates are executed on the main thread
-                print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
-                self.update_ui_on_main_thread(str(packet))
+            print("Received message in update_ui:", packet)  # Debugging statement
+            # Ensure UI updates are executed on the main thread
+            print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
+            self.update_ui_on_main_thread(packet)
 
     # Receives packet from update_ui and then sends it over to update the UI on the main thread
-    @mainthread
     def update_ui_on_main_thread(self, packet):
         """
         Update the UI on the main thread with packet data.
@@ -127,32 +133,46 @@ class MainApp(MDApp):
             packet: The packet data to update the UI with.
         """
         if packet:
-            print("Received message:", str(packet))  # Debugging statement
-            # Ensure UI updates are executed on the main thread
-            print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
-            self.update_ui_with_log_message(str(packet))
+            if isinstance(packet, openttdpacket.ChatPacket):
+                print(f'Chat Packet on ui_on_main_thread: {packet}')
+                self.update_ui_with_chat_message(packet)
+            else:
+                if self.logging_enabled is True:
+                    self.update_ui_with_log_message(str(packet))
         else:
             # Ensure that the ScrollView stays at the bottom even when packet is empty
             log_message_list = self.root.ids.log_message_list
-            log_message_list.parent.scroll_y = 0
-        if isinstance(packet, openttdpacket.ChatPacket):
-            message = f'{packet.id}: {packet.message}'
-            print(f'Chat: {message}')
-            self.update_ui_with_chat_message(message=message)
+            log_message_list.parent.scroll_y = 1
 
     def update_ui_with_chat_message(self, message):
         """
         Update the UI with a chat message.
 
         Args:
-            message: The chat message to display in the UI.
+            message: The chat message packet to display in the UI.
         """
         # Add a new item to the MDList
-        chat_message_list = self.root.ids.chat_message_list
-        chat_message_list.add_widget(OneLineListItem(text=message))
 
-        # Ensure that the ScrollView stays at the bottom
+        chat_message_list = self.root.ids.chat_message_list
+        try:
+            chat_message_list.add_widget(OneLineListItem(text=message.message))
+        except:
+            pass
+        try:
+            chat_message_list.add_widget(OneLineListItem(text=message))
+        except:
+            pass
+
+        # Schedule the scrolling to the bottom after a slight delay
+        Clock.schedule_once(lambda dt: self.scroll_chat_view_to_bottom())
+
+    def scroll_chat_view_to_bottom(self):
+        """
+        Scroll the chat view to the bottom.
+        """
+        chat_message_list = self.root.ids.chat_message_list
         chat_message_list.parent.scroll_y = 0
+        chat_message_list.parent.scroll_to(chat_message_list.children[-1])  # Scroll to the bottom
 
     def update_ui_with_log_message(self, message):
         """
@@ -180,6 +200,26 @@ class MainApp(MDApp):
         if log_message_list.parent.scroll_y == 1:
             # Scroll to the top to show the newest message
             log_message_list.parent.scroll_y = 1
+
+    def send_chat_message(self, message):
+        """
+        Send a chat message to the OpenTTD server and update the chat scroll view.
+
+        Args:
+            message: The chat message to send.
+        """
+
+
+        # Add the sent message to the chat scroll view
+        self.update_ui_with_chat_message(message=message)
+
+        # Send the chat message to the OpenTTD server
+        self.send_to_admin_port(message=message, send_type='global')
+
+        # Scroll the chat view to the bottom
+        self.scroll_chat_view_to_bottom()
+
+
 
 
 if __name__ == '__main__':

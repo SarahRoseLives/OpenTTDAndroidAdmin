@@ -26,12 +26,25 @@ MDScreen:
             icon: "chat"
             BoxLayout:
                 orientation: "vertical"
+
                 ScrollView:
+                    id: chat_scroll_view
                     size_hint_y: None
-                    height: self.parent.height  # Adjust the height to match the parent
-                    do_scroll_y: True  # Disable automatic scrolling
-                    MDList:
-                        id: chat_message_list  # Give an id to the MDList widget
+                    height: self.parent.height - chat_input.height  # Adjust the height to match the parent
+                    do_scroll_y: True
+                    GridLayout:
+                        id: chat_message_list
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(10)
+
+                MDTextField:
+                    id: chat_input
+                    hint_text: "Enter chat message"
+                    size_hint_y: None
+                    height: "48dp"
+                    on_text_validate: app.send_chat_message(self.text)
 
 
         MDBottomNavigationItem:
