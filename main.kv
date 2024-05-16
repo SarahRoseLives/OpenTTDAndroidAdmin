@@ -16,30 +16,19 @@ MDScreen:
                         id: label_network
                         halign: 'left'
                         markup: True
-                        text: "[size=35][b]Connected[/b][/size]"
+                        text: "[color=#FF0000][size=35][b]No OpenTTD Server Found in Settings![/b][/size][/color]"
                         color: 0,0,0,1
-
 
 
         MDBottomNavigationItem:
             name: "screen2"
-            text: "Send Commands"
-            icon: "remote"
-            GridLayout:
-                rows: 3
-                cols: 3
-
-
-
-        MDBottomNavigationItem:
-            name: "screen3"
             text: "Chat"
             icon: "chat"
             BoxLayout:  #Breaks Screen into sections
 
 
         MDBottomNavigationItem:
-            name: "screen4"
+            name: "screen3"
             text: "Server Log"
             icon: "text"
             BoxLayout:
@@ -50,3 +39,65 @@ MDScreen:
                     do_scroll_y: True  # Disable automatic scrolling
                     MDList:
                         id: message_list  # Give an id to the MDList widget
+
+
+        MDBottomNavigationItem:
+            name: "screen4"
+            text: "Settings"
+            icon: "application-settings"
+
+            BoxLayout:
+                orientation: 'vertical'
+                padding: dp(10)
+
+                GridLayout:
+                    cols: 2
+                    row_default_height: '48dp'
+                    row_force_default: True
+                    spacing: dp(10)
+
+                    MDLabel:
+                        text: "OpenTTD Server"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDTextField:
+                        id: openttd_server
+                        hint_text: "Enter OpenTTD Server address"
+                        text: app.server  # Load from app.server
+
+                    MDLabel:
+                        text: "Admin Port Number"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDTextField:
+                        id: admin_port
+                        hint_text: "Enter Admin Port Number"
+                        text: str(app.admin_port)  # Load from app.admin_port
+
+                    MDLabel:
+                        text: "Admin Password"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDTextField:
+                        id: admin_password
+                        hint_text: "Enter Admin Password"
+                        text: app.password  # Load from app.password
+
+                    MDLabel:
+                        text: "Enable Logging"
+                        size_hint_x: None
+                        width: dp(150)
+
+                    MDCheckbox:
+                        id: enable_logging
+                        active: app.logging_enabled  # Load from app.logging_enabled
+
+                MDRaisedButton:
+                    text: "Save"
+                    size_hint_y: None
+                    height: "48dp"
+                    on_release: app.save_settings(openttd_server.text, admin_port.text, admin_password.text, enable_logging.active)
+
