@@ -111,6 +111,9 @@ class MainApp(MDApp):
             print(f"An error occurred: {e}")
             # Handle the error appropriately
 
+
+
+
     def update_ui(self, packet):
         """
         Update the UI with packet data.
@@ -136,6 +139,22 @@ class MainApp(MDApp):
             if isinstance(packet, openttdpacket.ChatPacket):
                 print(f'Chat Packet on ui_on_main_thread: {packet}')
                 self.update_ui_with_chat_message(packet)
+            if isinstance(packet, openttdpacket.WelcomePacket):
+                server_name = packet.server_name
+                map_name = packet.map_name
+                seed = packet.seed
+                version = packet.version
+                mapwidth = packet.mapwidth
+                landscape = packet.landscape
+                mapheight = packet.mapheight
+                startdate = packet.startdate
+                # Update the label_main_header text
+                main_header_label1 = self.root.ids.label_main_header1
+                main_header_label2 = self.root.ids.label_main_header2
+                main_header_label3 = self.root.ids.label_main_header3
+                main_header_label1.text = f"[color=#00FF00][size=25][b]{server_name} Version: {version}[/b][/size][/color]\r\n"
+                main_header_label2.text = f"[color=#00FF00][size=20][b]Map: {map_name} Landscape: {landscape} Start Date: {startdate}[/b][/size][/color]"
+
             else:
                 if self.logging_enabled is True:
                     self.update_ui_with_log_message(str(packet))

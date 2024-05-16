@@ -10,13 +10,26 @@ MDScreen:
             icon: "account-alert"
             StackLayout:
                 BoxLayout:
-                    orientation: 'horizontal'
+                    orientation: 'vertical'  # Changed orientation to vertical
                     size_hint_y: 0.1
+                    padding: dp(20)  # Add padding to the outer BoxLayout
                     Label:
-                        id: label_network
+                        id: label_main_header1
                         halign: 'left'
                         markup: True
                         text: "[color=#FF0000][size=35][b]No OpenTTD Server Found in Settings![/b][/size][/color]"
+                        color: 0,0,0,1
+                    Label:
+                        id: label_main_header2
+                        halign: 'left'
+                        markup: True
+                        text: ""
+                        color: 0,0,0,1
+                    Label:
+                        id: label_main_header3
+                        halign: 'left'
+                        markup: True
+                        text: ""
                         color: 0,0,0,1
 
 
