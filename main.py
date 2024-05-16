@@ -98,6 +98,9 @@ class MainApp(MDApp):
                     Clock.schedule_once(lambda dt, p=packet: self.update_ui(p))
 
 
+    def process_welcome_packet(self):
+        pass
+
 
     # Where stuff happens
     def update_ui(self, packet):
@@ -117,17 +120,15 @@ class MainApp(MDApp):
         print("Received message:", str(packet))  # Debugging statement
         # Ensure UI updates are executed on the main thread
         print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
-        self.update_ui_with_message(str(packet))
+        self.update_ui_with_log_message(str(packet))
 
-    def update_ui_with_message(self, message):
+    def update_ui_with_log_message(self, message):
         # Add a new item to the MDList
-        message_list = self.root.ids.message_list
-        message_list.add_widget(OneLineListItem(text=message))
+        log_message_list = self.root.ids.log_message_list
+        log_message_list.add_widget(OneLineListItem(text=message))
 
-        # Check if the ScrollView is not at the bottom
-        if message_list.parent.scroll_y > -1:
-            # Ensure that the ScrollView stays at the bottom
-            message_list.parent.scroll_y = 0
+        # Ensure that the ScrollView stays at the bottom
+        log_message_list.parent.scroll_y = 0
 
 
 if __name__ == '__main__':
