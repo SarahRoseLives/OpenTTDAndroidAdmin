@@ -1,0 +1,3 @@
+OpenTTD Android Admin
+
+Goal: Design an App that makes it easy to access admin controls and details that an admin might need.

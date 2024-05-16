@@ -1,0 +1,52 @@
+#:import dp kivy.metrics.dp
+
+
+MDScreen:
+    MDBottomNavigation:
+        id: panel
+        MDBottomNavigationItem
+            name: "Screen1"
+            text: "Administration"
+            icon: "account-alert"
+            StackLayout:
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: 0.1
+                    Label:
+                        id: label_network
+                        halign: 'left'
+                        markup: True
+                        text: "[size=35][b]Connected[/b][/size]"
+                        color: 0,0,0,1
+
+
+
+        MDBottomNavigationItem:
+            name: "screen2"
+            text: "Send Commands"
+            icon: "remote"
+            GridLayout:
+                rows: 3
+                cols: 3
+
+
+
+        MDBottomNavigationItem:
+            name: "screen3"
+            text: "Chat"
+            icon: "chat"
+            BoxLayout:  #Breaks Screen into sections
+
+
+        MDBottomNavigationItem:
+            name: "screen4"
+            text: "Server Log"
+            icon: "text"
+            BoxLayout:
+                orientation: "vertical"
+                ScrollView:
+                    size_hint_y: None
+                    height: self.parent.height  # Adjust the height to match the parent
+                    do_scroll_y: True  # Disable automatic scrolling
+                    MDList:
+                        id: message_list  # Give an id to the MDList widget
