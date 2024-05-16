@@ -104,7 +104,12 @@ class MainApp(MDApp):
 
     # Where stuff happens
     def update_ui(self, packet):
-        # Update UI with packet data
+        """
+        Update the UI with packet data.
+
+        Args:
+            packet: The packet received from the server.
+        """
         if packet:
             if self.logging_enabled is True:
                 print("Received message:", packet)  # Debugging statement
@@ -112,10 +117,15 @@ class MainApp(MDApp):
                 print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
                 self.update_ui_on_main_thread(str(packet))
 
-    # Recieves Admin from  update_ui and then sends it over
+    # Receives packet from update_ui and then sends it over to update the UI on the main thread
     @mainthread
     def update_ui_on_main_thread(self, packet):
-        # Update UI with packet data
+        """
+        Update the UI on the main thread with packet data.
+
+        Args:
+            packet: The packet data to update the UI with.
+        """
         if packet:
             print("Received message:", str(packet))  # Debugging statement
             # Ensure UI updates are executed on the main thread
@@ -125,14 +135,51 @@ class MainApp(MDApp):
             # Ensure that the ScrollView stays at the bottom even when packet is empty
             log_message_list = self.root.ids.log_message_list
             log_message_list.parent.scroll_y = 0
+        if isinstance(packet, openttdpacket.ChatPacket):
+            message = f'{packet.id}: {packet.message}'
+            print(f'Chat: {message}')
+            self.update_ui_with_chat_message(message=message)
+
+    def update_ui_with_chat_message(self, message):
+        """
+        Update the UI with a chat message.
+
+        Args:
+            message: The chat message to display in the UI.
+        """
+        # Add a new item to the MDList
+        chat_message_list = self.root.ids.chat_message_list
+        chat_message_list.add_widget(OneLineListItem(text=message))
+
+        # Ensure that the ScrollView stays at the bottom
+        chat_message_list.parent.scroll_y = 0
 
     def update_ui_with_log_message(self, message):
-        # Add a new item to the MDList
+        """
+        Update the UI with a log message and ensure ScrollView stays at the bottom.
+
+        Args:
+            message: The log message to display in the UI.
+        """
+        # Add a new item to the MDList at the bottom
         log_message_list = self.root.ids.log_message_list
         log_message_list.add_widget(OneLineListItem(text=message))
 
-        # Ensure that the ScrollView stays at the bottom
-        log_message_list.parent.scroll_y = 0
+        # Calculate the ScrollView height
+        scroll_view_height = log_message_list.parent.height
+
+        # Calculate the total height of the content
+        content_height = log_message_list.minimum_height
+
+        # Check if the ScrollView is already scrolled to the bottom
+        if content_height > scroll_view_height:
+            # Scroll to the bottom to show the newest message
+            log_message_list.parent.scroll_y = 0
+
+        # Check if the top message is visible
+        if log_message_list.parent.scroll_y == 1:
+            # Scroll to the top to show the newest message
+            log_message_list.parent.scroll_y = 1
 
 
 if __name__ == '__main__':

@@ -24,7 +24,14 @@ MDScreen:
             name: "screen2"
             text: "Chat"
             icon: "chat"
-            BoxLayout:  #Breaks Screen into sections
+            BoxLayout:
+                orientation: "vertical"
+                ScrollView:
+                    size_hint_y: None
+                    height: self.parent.height  # Adjust the height to match the parent
+                    do_scroll_y: True  # Disable automatic scrolling
+                    MDList:
+                        id: chat_message_list  # Give an id to the MDList widget
 
 
         MDBottomNavigationItem:
