@@ -1,6 +1,5 @@
 #:import dp kivy.metrics.dp
 
-
 MDScreen:
     MDBottomNavigation:
         id: panel
@@ -8,12 +7,14 @@ MDScreen:
             name: "Screen1"
             text: "Administration"
             icon: "account-alert"
-            StackLayout:
+            BoxLayout:
+                orientation: 'vertical'
+
                 BoxLayout:
-                    orientation: 'vertical'  # Changed orientation to vertical
-                    size_hint_y: 0.2
+                    orientation: 'vertical'
+                    size_hint_y: .1
                     height: self.minimum_height
-                    padding: dp(20)  # Add padding to the outer BoxLayout
+
                     Label:
                         id: label_main_header1
                         halign: 'left'
@@ -33,6 +34,34 @@ MDScreen:
                         text: ""
                         color: 0,0,0,1
 
+                ScrollView:
+                    size_hint_y: None
+                    height: self.parent.height - label_main_header1.height - label_main_header2.height - label_main_header3.height
+                    do_scroll_y: True
+
+                    GridLayout:
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(10)
+                        padding: dp(20)  # Add padding to the GridLayout
+
+                        Button:
+                            text: 'Demo User 1\r\nCompany: Demo User Transport Money: $184,000'
+                            size_hint_y: None
+                            height: '48dp'
+                        Button:
+                            text: 'Demo User 2\r\nCompany: Demo User Transport Money: $750,230'
+                            size_hint_y: None
+                            height: '48dp'
+                        Button:
+                            text: 'Demo User 3\r\nCompany: Demo User Transport Money: $2,340,030'
+                            size_hint_y: None
+                            height: '48dp'
+                        Button:
+                            text: 'Demo User 4\r\nCompany: Demo User Transport Money: $320,023'
+                            size_hint_y: None
+                            height: '48dp'
 
         MDBottomNavigationItem:
             name: "screen2"
@@ -40,6 +69,23 @@ MDScreen:
             icon: "chat"
             BoxLayout:
                 orientation: "vertical"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: "48dp"
+                    padding: "10dp"
+                    spacing: "10dp"
+
+                    MDTextField:
+                        id: chat_input
+                        hint_text: "Enter chat message"
+                        size_hint_x: 0.8
+                        on_text_validate: app.send_chat_message(self.text)
+
+                    MDRaisedButton:
+                        text: "Send"
+                        size_hint_x: 0.2
+                        on_release: app.send_chat_message(chat_input.text)
 
                 ScrollView:
                     id: chat_scroll_view
@@ -52,13 +98,6 @@ MDScreen:
                         size_hint_y: None
                         height: self.minimum_height
                         spacing: dp(10)
-
-                MDTextField:
-                    id: chat_input
-                    hint_text: "Enter chat message"
-                    size_hint_y: None
-                    height: "48dp"
-                    on_text_validate: app.send_chat_message(self.text)
 
 
         MDBottomNavigationItem:

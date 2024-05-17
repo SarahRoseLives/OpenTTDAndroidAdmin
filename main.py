@@ -103,12 +103,6 @@ class MainApp(MDApp):
         # Start the admin thread again
         threading.Thread(target=self.start_admin).start()
 
-        # Reload settings
-        self.load_settings()  # Reload settings after restarting admin thread
-
-        # Start the admin thread again
-        threading.Thread(target=self.start_admin).start()
-
     def start_admin(self):
         # Instantiate the Admin class and establish connection to the server
         with Admin(ip=self.server, port=self.admin_port, name=f"{BOT_NAME} Listener", password=self.password) as admin:
@@ -203,27 +197,43 @@ class MainApp(MDApp):
             log_message_list = self.root.ids.log_message_list
             log_message_list.parent.scroll_y = 1
 
-    def update_ui_with_chat_message(self, message):
+    def update_ui_with_chat_message(self, message, is_sent=False):
         """
         Update the UI with a chat message.
 
         Args:
             message: The chat message packet to display in the UI.
+            is_sent: Boolean indicating whether the message is sent by the user.
         """
-        # Add a new item to the MDList
-
+        # Add a new item to the chat message list
         chat_message_list = self.root.ids.chat_message_list
+
         try:
             chat_message_list.add_widget(OneLineListItem(text=message.message))
-        except:
-            pass
-        try:
+        except AttributeError:  # Catch the AttributeError if message doesn't have 'message' attribute
             chat_message_list.add_widget(OneLineListItem(text=message))
-        except:
-            pass
 
-        # Schedule the scrolling to the bottom after a slight delay
-        Clock.schedule_once(lambda dt: self.scroll_chat_view_to_bottom())
+        # Scroll to the bottom if the message is sent, otherwise maintain the current position
+        if is_sent:
+            Clock.schedule_once(lambda dt: self.scroll_chat_view_to_bottom())
+        else:
+            chat_message_list.parent.scroll_y = 0
+
+    def send_chat_message(self, message):
+        """
+        Send a chat message to the OpenTTD server and update the chat scroll view.
+
+        Args:
+            message: The chat message to send.
+        """
+        # Add the sent message to the chat scroll view and scroll to the bottom
+        try:
+            self.update_ui_with_chat_message(message=message, is_sent=True)
+        except AttributeError:  # Catch the AttributeError if message doesn't have 'message' attribute
+            self.update_ui_with_chat_message(message=message.message, is_sent=True)
+
+        # Send the chat message to the OpenTTD server
+        self.send_to_admin_port(message=message, send_type='global')
 
     def scroll_chat_view_to_bottom(self):
         """
@@ -232,6 +242,8 @@ class MainApp(MDApp):
         chat_message_list = self.root.ids.chat_message_list
         chat_message_list.parent.scroll_y = 0
         chat_message_list.parent.scroll_to(chat_message_list.children[-1])  # Scroll to the bottom
+
+
 
     def update_ui_with_log_message(self, message):
         """
@@ -259,25 +271,6 @@ class MainApp(MDApp):
         if log_message_list.parent.scroll_y == 1:
             # Scroll to the top to show the newest message
             log_message_list.parent.scroll_y = 1
-
-    def send_chat_message(self, message):
-        """
-        Send a chat message to the OpenTTD server and update the chat scroll view.
-
-        Args:
-            message: The chat message to send.
-        """
-
-
-        # Add the sent message to the chat scroll view
-        self.update_ui_with_chat_message(message=message)
-
-        # Send the chat message to the OpenTTD server
-        self.send_to_admin_port(message=message, send_type='global')
-
-        # Scroll the chat view to the bottom
-        self.scroll_chat_view_to_bottom()
-
 
 
 
