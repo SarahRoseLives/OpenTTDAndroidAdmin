@@ -162,9 +162,11 @@ class MainApp(MDApp):
             packet: The packet data to update the UI with.
         """
         if packet:
-            if isinstance(packet, openttdpacket.ChatPacket):
-                print(f'Chat Packet on ui_on_main_thread: {packet}')
-                self.update_ui_with_chat_message(packet)
+            if isinstance(packet, openttdpacket.ConsolePacket):
+                if '[All]' in packet.message:
+                    packet = str(packet.message).replace('[All] ', '')
+                    print(f'Chat Packet on ui_on_main_thread: {packet}')
+                    self.update_ui_with_chat_message(packet)
             if isinstance(packet, openttdpacket.WelcomePacket):
                 server_name = packet.server_name
                 map_name = packet.map_name
@@ -226,11 +228,6 @@ class MainApp(MDApp):
         Args:
             message: The chat message to send.
         """
-        # Add the sent message to the chat scroll view and scroll to the bottom
-        try:
-            self.update_ui_with_chat_message(message=message, is_sent=True)
-        except AttributeError:  # Catch the AttributeError if message doesn't have 'message' attribute
-            self.update_ui_with_chat_message(message=message.message, is_sent=True)
 
         # Send the chat message to the OpenTTD server
         self.send_to_admin_port(message=message, send_type='global')

@@ -1,13 +1,13 @@
 [app]
 
 #pre-splace screen
-presplash.filename = splash.png
+presplash.filename = resources/app/splash.png
 
 #app icon
-icon.filename = icon.png
+icon.filename = resources/app/icon.png
 
 # (str) Title of your application
-title = OpenTTDAndroidAdmin
+title = OpenTTDAA
 
 # (str) Package name
 package.name = OpenTTDAA

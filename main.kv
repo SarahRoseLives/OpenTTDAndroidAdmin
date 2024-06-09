@@ -46,22 +46,25 @@ MDScreen:
                         spacing: dp(10)
                         padding: dp(20)  # Add padding to the GridLayout
 
-                        Button:
-                            text: 'Demo User 1\r\nCompany: Demo User Transport Money: $184,000'
-                            size_hint_y: None
-                            height: '48dp'
-                        Button:
-                            text: 'Demo User 2\r\nCompany: Demo User Transport Money: $750,230'
-                            size_hint_y: None
-                            height: '48dp'
-                        Button:
-                            text: 'Demo User 3\r\nCompany: Demo User Transport Money: $2,340,030'
-                            size_hint_y: None
-                            height: '48dp'
-                        Button:
-                            text: 'Demo User 4\r\nCompany: Demo User Transport Money: $320,023'
-                            size_hint_y: None
-                            height: '48dp'
+                        MDList:
+                            ThreeLineListItem:
+                                id: test
+                                text: 'Demo User 1'
+                                secondary_text: 'Company: Demo User Transport'
+                                tertiary_text: 'Money: $184,000'
+                            ThreeLineListItem:
+                                text: 'Demo User 2'
+                                secondary_text: 'Company: Demo User Transport'
+                                tertiary_text: 'Money: $750,230'
+                            ThreeLineListItem:
+                                text: 'Demo User 3'
+                                secondary_text: 'Company: Demo User Transport'
+                                tertiary_text: 'Money: $2,340,030'
+                            ThreeLineListItem:
+                                text: 'Demo User 4'
+                                secondary_text: 'Company: Demo User Transport'
+                                tertiary_text: 'Money: $320,023'
+
 
         MDBottomNavigationItem:
             name: "screen2"
@@ -232,3 +235,5 @@ MDScreen:
                         size_hint_y: None
                         height: "48dp"
                         on_release: app.save_settings(openttd_server.text, server_alias.text, admin_port.text, admin_password.text, enable_logging.active, enable_chat_logging.active, enable_console_logging.active, enable_clientinfo_logging.active, enable_rcon_logging.active)
+
+
