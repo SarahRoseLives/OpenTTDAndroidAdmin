@@ -4,9 +4,37 @@ from kivy.clock import Clock, mainthread
 from kivymd.uix.list import OneLineListItem
 import threading
 import configparser
+from kivymd.uix.list import ThreeLineListItem
+from kivy.properties import DictProperty
+
+
+# Define a dictionary with data
+data_dict = {
+    "Item 1": {
+        "line1": "Detail 1 Line 1",
+        "line2": "Detail 1 Line 2",
+        "line3": "Detail 1 Line 3"
+    },
+    "Item 2": {
+        "line1": "Detail 2 Line 1",
+        "line2": "Detail 2 Line 2",
+        "line3": "Detail 2 Line 3"
+    },
+    "Item 3": {
+        "line1": "Detail 3 Line 1",
+        "line2": "Detail 3 Line 2",
+        "line3": "Detail 3 Line 3"
+    },
+    "Item 4": {
+        "line1": "Detail 4 Line 1",
+        "line2": "Detail 4 Line 2",
+        "line3": "Detail 4 Line 3"
+    }
+}
 
 
 BOT_NAME = "ottdAndroidAdmin"
+
 class MainApp(MDApp):
     # Define logging_enabled, password, admin_port, and server as class attributes
     logging_enabled = False  # Set a default value
@@ -19,6 +47,8 @@ class MainApp(MDApp):
     logging_clientinfo_enabled = False
     logging_rcon_enabled = False
 
+    data = DictProperty(data_dict)
+
     def build(self):
         # Setting theme to my favorite theme
         self.theme_cls.primary_palette = "DeepPurple"
@@ -26,8 +56,10 @@ class MainApp(MDApp):
         self.load_settings()
         # Start the admin thread
         threading.Thread(target=self.start_admin).start()
-        # Assign settings to UI fields
-        self.assign_settings_to_ui()
+        # Assign settings to UI fields after UI is loaded
+        Clock.schedule_once(lambda dt: self.assign_settings_to_ui())
+        # Populate the client list
+        Clock.schedule_once(lambda dt: self.populate_list())
 
     def assign_settings_to_ui(self):
         # Assign loaded settings to UI fields
@@ -95,32 +127,113 @@ class MainApp(MDApp):
         # Restart Admin Thread
         self.restart_admin_thread()
 
+    def on_kv_post(self, base_widget):
+        self.populate_list()
+
+    def on_start(self):
+        try:
+            def rcon_send(command: str) -> str:
+                response = []
+                with Admin(ip=self.server, port=self.admin_port, name="pyOpenTTDAdmin", password="toor") as admin:
+                    admin.send_rcon(command)
+                    while True:
+                        packets = admin.recv()
+                        for packet in packets:
+                            if isinstance(packet, openttdpacket.RconPacket):
+                                response.append(packet.response)
+                            elif isinstance(packet, openttdpacket.RconEndPacket):
+                                return "\n".join(response).strip()
+
+            raw_output = rcon_send('clients')
+            print("Raw Output:\n", raw_output)
+            client_dict = self.process_clients_output(raw_output)
+            print("\nProcessed Clients Dictionary:\n", client_dict)
+            self.update_data_and_list(client_dict)
+        except:
+            pass
+
+
+    def process_clients_output(self, output: str) -> dict:
+        """
+        Processes the output from the RCON 'clients' command and structures it into a dictionary.
+
+        Args:
+            output (str): The raw output from the 'clients' command.
+
+        Returns:
+            dict: A dictionary with structured client information in the expected format.
+        """
+        clients_dict = {}
+        client_lines = output.split('\n')
+
+        for i, line in enumerate(client_lines):
+            if 'server' in line:
+                continue  # Skip the server entry
+
+            # Extract client details
+            parts = line.split()
+            print(parts)
+            client_id = parts[1].strip('#')  # Extract the client ID
+            client_name = parts[3].strip("'")  # Extract the client name
+            company = parts[6]  # Extract the company number
+            client_ip = parts[-1]  # Extract the IP address
+
+            # Create dictionary entry with the expected structure
+            clients_dict[f"Client {client_id}"] = {
+                "line1": f"Name: {client_name}",
+                "line2": f"Company: {company}",
+                "line3": f"IP: {client_ip}"
+            }
+
+        return clients_dict
+
+    def update_data_and_list(self, new_data_dict):
+        # Update the internal data dictionary
+        self.data = new_data_dict
+
+        # Call populate_list to refresh the UI with the updated data
+        self.populate_list()
+
+    def populate_list(self, *args):
+        client_list = self.root.ids.client_list
+        client_list.clear_widgets()
+        for key, value in self.data.items():
+            client_list.add_widget(
+                ThreeLineListItem(
+                    text=key,
+                    secondary_text=value["line1"],
+                    tertiary_text=f"{value['line2']}\n{value['line3']}"
+                )
+            )
+
     def restart_admin_thread(self):
         # Stop the admin thread if it's running
         if hasattr(self, 'admin_thread') and self.admin_thread.is_alive():
             self.stop_admin_thread()
-
         # Start the admin thread again
         threading.Thread(target=self.start_admin).start()
 
     def start_admin(self):
-        # Instantiate the Admin class and establish connection to the server
-        with Admin(ip=self.server, port=self.admin_port, name=f"{BOT_NAME} Listener", password=self.password) as admin:
-            # Subscribe to receive date updates and set the frequency for updates
-            if self.logging_console_enabled:
-                admin.send_subscribe(AdminUpdateType.CONSOLE)
-            admin.send_subscribe(AdminUpdateType.CHAT)
-            admin.send_subscribe(AdminUpdateType.CMD_LOGGING)
-            if self.logging_clientinfo_enabled:
-                admin.send_subscribe(AdminUpdateType.CLIENT_INFO)
-            admin.send_subscribe(AdminUpdateType.DATE, AdminUpdateFrequency.ANUALLY)
-            # Keep the connection open and print incoming date packets
-            while True:
-                # Receive packets from the server
-                packets = admin.recv()
-                for packet in packets:
-                    # Update UI in the main thread
-                    Clock.schedule_once(lambda dt, p=packet: self.update_ui(p))
+        try:
+            # Instantiate the Admin class and establish connection to the server
+            with Admin(ip=self.server, port=self.admin_port, name=f"{BOT_NAME} Listener", password=self.password) as admin:
+                # Subscribe to receive date updates and set the frequency for updates
+                if self.logging_console_enabled:
+                    admin.send_subscribe(AdminUpdateType.CONSOLE)
+                admin.send_subscribe(AdminUpdateType.CHAT)
+                admin.send_subscribe(AdminUpdateType.CMD_LOGGING)
+                if self.logging_clientinfo_enabled:
+                    admin.send_subscribe(AdminUpdateType.CLIENT_INFO)
+                admin.send_subscribe(AdminUpdateType.DATE, AdminUpdateFrequency.ANUALLY)
+                # Keep the connection open and print incoming date packets
+                while True:
+                    # Receive packets from the server
+                    packets = admin.recv()
+                    for packet in packets:
+                        # Update UI in the main thread
+                        Clock.schedule_once(lambda dt, p=packet: self.update_ui(p))
+        except:
+            pass
 
     def send_to_admin_port(self, message, send_type, client_id=None):
         try:
@@ -137,9 +250,6 @@ class MainApp(MDApp):
             print(f"An error occurred: {e}")
             # Handle the error appropriately
 
-
-
-
     def update_ui(self, packet):
         """
         Update the UI with packet data.
@@ -153,7 +263,6 @@ class MainApp(MDApp):
             print("Is main thread:", threading.current_thread().name == 'MainThread')  # Debugging statement
             self.update_ui_on_main_thread(packet)
 
-    # Receives packet from update_ui and then sends it over to update the UI on the main thread
     def update_ui_on_main_thread(self, packet):
         """
         Update the UI on the main thread with packet data.
@@ -180,11 +289,11 @@ class MainApp(MDApp):
                 main_header_label1 = self.root.ids.label_main_header1
                 main_header_label2 = self.root.ids.label_main_header2
                 main_header_label3 = self.root.ids.label_main_header3
-                main_header_label1.text = f"[color=#000000][size=40][b]{self.server_alias} Version: {version}[/b][/size][/color]\r\n"
-                main_header_label2.text = f"[color=#000000][size=35][b]Map: {map_name} Landscape: {landscape} Start Date: {startdate}[/b][/size][/color]"
+                main_header_label1.text = f"[color=#000000][size=45][b]{self.server_alias} V: {version}[/b][/size][/color]\r\n"
+                main_header_label2.text = f"[color=#000000][size=35][b]Map Size: {map_name} {mapwidth}X{mapheight} Start Date: {startdate}[/b][/size][/color]"
 
             else:
-                if self.logging_enabled is True:
+                if self.logging_enabled:
                     if isinstance(packet, openttdpacket.ConsolePacket):
                         self.update_ui_with_log_message(packet.message)
                     if isinstance(packet, openttdpacket.ClientInfoPacket):
@@ -240,8 +349,6 @@ class MainApp(MDApp):
         chat_message_list.parent.scroll_y = 0
         chat_message_list.parent.scroll_to(chat_message_list.children[-1])  # Scroll to the bottom
 
-
-
     def update_ui_with_log_message(self, message):
         """
         Update the UI with a log message and ensure ScrollView stays at the bottom.
@@ -270,7 +377,53 @@ class MainApp(MDApp):
             log_message_list.parent.scroll_y = 1
 
 
-
 if __name__ == '__main__':
     app = MainApp()
     app.run()
+
+
+
+'''
+class MainApp(MDApp):
+    # Existing code...
+
+    def update_data_and_list(self, new_data_dict):
+        # Update the internal data dictionary
+        self.data = new_data_dict
+
+        # Call populate_list to refresh the UI with the updated data
+        self.populate_list()
+
+    def populate_list(self, *args):
+        client_list = self.root.ids.client_list
+        client_list.clear_widgets()
+        for key, value in self.data.items():
+            client_list.add_widget(
+                ThreeLineListItem(
+                    text=key,
+                    secondary_text=value["line1"],
+                    tertiary_text=f"{value['line2']}\n{value['line3']}"
+                )
+            )
+
+# Example of using the update_data_and_list function
+if __name__ == '__main__':
+    app = MainApp()
+    # Define new data to update the list
+    new_data_dict = {
+        "New Item 1": {
+            "line1": "New Detail 1 Line 1",
+            "line2": "New Detail 1 Line 2",
+            "line3": "New Detail 1 Line 3"
+        },
+        "New Item 2": {
+            "line1": "New Detail 2 Line 1",
+            "line2": "New Detail 2 Line 2",
+            "line3": "New Detail 2 Line 3"
+        },
+        # Add more items as needed
+    }
+    # Call the update function
+    app.update_data_and_list(new_data_dict)
+    app.run()
+    '''
