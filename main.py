@@ -5,7 +5,11 @@ from kivymd.uix.list import OneLineListItem
 import threading
 import configparser
 from kivymd.uix.list import ThreeLineListItem
+from kivymd.uix.menu import MDDropdownMenu
 from kivy.properties import DictProperty
+from kivy.metrics import dp
+import re
+
 
 
 # Define a dictionary with data
@@ -58,8 +62,8 @@ class MainApp(MDApp):
         threading.Thread(target=self.start_admin).start()
         # Assign settings to UI fields after UI is loaded
         Clock.schedule_once(lambda dt: self.assign_settings_to_ui())
-        # Populate the client list
-        Clock.schedule_once(lambda dt: self.populate_list())
+
+        Clock.schedule_interval(lambda dt: self.update_clientlist(), 5)
 
     def assign_settings_to_ui(self):
         # Assign loaded settings to UI fields
@@ -127,10 +131,10 @@ class MainApp(MDApp):
         # Restart Admin Thread
         self.restart_admin_thread()
 
-    def on_kv_post(self, base_widget):
-        self.populate_list()
-
     def on_start(self):
+        pass
+
+    def update_clientlist(self):
         try:
             def rcon_send(command: str) -> str:
                 response = []
@@ -197,14 +201,60 @@ class MainApp(MDApp):
     def populate_list(self, *args):
         client_list = self.root.ids.client_list
         client_list.clear_widgets()
+
         for key, value in self.data.items():
-            client_list.add_widget(
-                ThreeLineListItem(
-                    text=key,
-                    secondary_text=value["line1"],
-                    tertiary_text=f"{value['line2']}\n{value['line3']}"
-                )
+            list_item = ThreeLineListItem(
+                text=key,
+                secondary_text=value["line1"],
+                tertiary_text=f"{value['line2']}\n{value['line3']}"
             )
+            list_item.bind(on_release=lambda instance, k=key: self.client_menu(instance, k))
+            client_list.add_widget(list_item)
+
+    def client_menu(self, instance, client_key):
+        menu_items = [
+            {
+                "text": "Kick",
+                "viewclass": "OneLineListItem",
+                "on_release": lambda: self.menu_action("kick", client_key),
+            },
+            {
+                "text": "Ban",
+                "viewclass": "OneLineListItem",
+                "on_release": lambda: self.menu_action("ban", client_key),
+            },
+            {
+                "text": "Delete Company",
+                "viewclass": "OneLineListItem",
+                "on_release": lambda: self.menu_action("delete_company", client_key),
+            },
+        ]
+
+        self.menu = MDDropdownMenu(
+            caller=instance,
+            items=menu_items,
+            width=dp(160),  # Adjust the width as necessary
+        )
+
+        self.menu.open()
+
+
+
+    def menu_action(self, action, client_key):
+        self.menu.dismiss()
+        # Regex pattern to capture numbers
+        pattern = re.compile(r'\d+')
+        # Find all numbers in client_key
+        numbers = pattern.findall(client_key)
+        # Join the numbers list into a single string (if there are multiple numbers)
+        client_id = ''.join(numbers)
+
+        if action == "kick":
+            self.send_to_admin_port(message=f'kick {client_id}', send_type='rcon')
+        elif action == "ban":
+            self.send_to_admin_port(message=f'ban {client_id}', send_type='rcon')
+        elif action == "delete_company":
+            pass
 
     def restart_admin_thread(self):
         # Stop the admin thread if it's running
